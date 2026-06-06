@@ -1,0 +1,6 @@
+{
+    "java.project.referencedLibraries": [
+        "folders/bin/commons-io-2.11.0.jar",
+        "folders/bin/thumbnailator-0.4.19.jar"
+    ]
+}

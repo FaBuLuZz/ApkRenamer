@@ -24,5 +24,7 @@ hs_err_pid*
 .idea
 folders/in
 folders/out
+folders/icon
+folders/banner
 folders/temp
 folders/cache
