@@ -59,6 +59,7 @@ public class Main {
         String name = parser.extractArgument("-n");
         String pack = parser.extractArgument("-p");
         String icon = parser.extractArgument("-i");
+        String banner = parser.extractArgument("-b");
         String dictionary = parser.extractArgument("-r");
         String decodeArguments = parser.extractArgument("-da");
         String buildArguments = parser.extractArgument("-ba");
@@ -70,9 +71,9 @@ public class Main {
         System.out.println(in);
         System.out.println(out);
         System.out.println(icon);
+        System.out.println(banner);
 
-
-        Renamer mRenamer = new Renamer(in, out, name, pack, icon, isDeepRename, isPauseActive, isSkipModify, decodeArguments, buildArguments, dictionary);
+        Renamer mRenamer = new Renamer(in, out, name, pack, icon, banner, isDeepRename, isPauseActive, isSkipModify, decodeArguments, buildArguments, dictionary);
 //        if (args.length > 1) {
 //            mRenamer = new Renamer(in, out, name, pack, icon, isDeepRename, isPauseActive, isSkipModify);
 //        } else {
@@ -81,7 +82,6 @@ public class Main {
         System.out.println("Java version = " + System.getProperty("java.version"));
 
         mRenamer.run();
-
     }
 
     private static void showHelp() {
@@ -100,6 +100,7 @@ public class Main {
                 + "\n\nAdd the [-da \"-option1 -option2\"] to pass arguments to Apktool when it decodes the apk."
                 + "\nAdd the [-ba \"-option1 -option2\"] to pass arguments to Apktool when it builds the apk."
                 + "\nThe string with arguments for Apktool should be enclosed in quotation marks."
+                + "\n\nAdd the [-b] <new_banner.png> flag to change the app banner for Android TV."
                 + "\n\nAdd the [-r] <path/to/dictionary.txt> flag and the program will replace text in APK files using a dictionary.";
         System.out.println(helpText);
     }
@@ -138,10 +139,12 @@ class Renamer {
     private File inApk = null;
     private File outApk = null;
     private File iconFile = null;
+    private File bannerFile = null;
 
     private String appName = "";
     private String pacName = "out";
     private String iconName = "";
+    private String bannerName = "";
 
     private Boolean isDeepRenaming = false;
     private Boolean isPauseActive = false;
@@ -168,6 +171,7 @@ class Renamer {
                    String name,
                    String pack,
                    String icon,
+                   String banner,
                    Boolean isDeepRenaming,
                    Boolean isPauseActive,
                    Boolean isSkipModify,
@@ -194,6 +198,9 @@ class Renamer {
         }
         if (!icon.equals("")) {
             this.iconFile = new File(icon);
+        }
+        if (!banner.equals("")) {
+            this.bannerFile = new File(banner);
         }
 
         this.decodeArguments = decodeArguments;
@@ -404,6 +411,10 @@ class Renamer {
         return new File(getCurrentDir() + File.separator + "icon");
     }
 
+    private File getBannerDir() {
+        return new File(getCurrentDir() + File.separator + "banner");
+    }
+
     protected File getResDir() {
         return new File(getTempDir() + File.separator + "res");
     }
@@ -447,6 +458,13 @@ class Renamer {
             iconFile = getFile(getIconDir(), ".png");
         }
         return this.iconFile;
+    }
+
+    private File getBannerPng() {
+        if (bannerFile == null) {
+            bannerFile = getFile(getBannerDir(), ".png");
+        }
+        return this.bannerFile;
     }
 
     private HashMap<String, String> getMapsApiKey() {
@@ -713,6 +731,10 @@ class Renamer {
             changeImages(manifest, newIcon);
             changeIconName(manifest);
         }
+        File newBanner = getBannerPng();
+        if (newBanner != null) {
+            changeBanner(manifest, newBanner);
+        }
         saveXmlFile(getManifestFile(), manifest);
         if (this.isDeepRenaming) {
             l("Perform deep renaming...");
@@ -733,6 +755,60 @@ class Renamer {
     private void changeIconName(Node n) {
         String name = getMipmapFolderName(n);
         replaceAttribute(n, new String[]{"application"}, "n1:icon", "@" + name + "/" + getNewIconName());
+    }
+
+    private void changeBanner(Node manifest, File newBanner) {
+        String newName = getNewBannerName();
+        String folderName = getBannerFolderName(manifest);
+        File[] folders = getMipMapFolders(folderName);
+        for (File f : folders) {
+            if (!f.getName().contains("anydpi")) {
+                int width = getBannerWidth(f);
+                int height = width * 9 / 16;
+                try {
+                    File resizedBanner = new File(f, newName + ".png");
+                    l("Resize banner from " + newBanner + " to " + resizedBanner);
+                    Thumbnails.of(newBanner)
+                            .size(width, height)
+                            .toFile(resizedBanner);
+                } catch (IOException e) {
+                    throw new RuntimeException(e);
+                }
+            }
+        }
+        replaceAttribute(manifest, new String[]{"application"}, "n1:banner", "@" + folderName + "/" + newName);
+    }
+
+    private String getBannerFolderName(Node manifest) {
+        Node att = getAttribute(manifest, new String[]{"application"}, "n1:banner");
+        if (att != null) {
+            String result = att.getNodeValue();
+            int end = result.indexOf("/");
+            return result.substring(1, end);
+        }
+        return getMipmapFolderName(manifest);
+    }
+
+    private String getNewBannerName() {
+        if (this.bannerName.equals("")) {
+            this.bannerName = generateString(new Random(), "abcdefghijklmnopqrstuvwxyz", 10);
+        }
+        return this.bannerName;
+    }
+
+    private int getBannerWidth(File mipMapFolder) {
+        String name = mipMapFolder.getName();
+        int result = 160;
+        if (name.contains("xxxhdpi")) {
+            result = 640;
+        } else if (name.contains("xxhdpi")) {
+            result = 480;
+        } else if (name.contains("xhdpi")) {
+            result = 320;
+        } else if (name.contains("hdpi")) {
+            result = 240;
+        }
+        return result;
     }
 
     private String getNewIconName() {

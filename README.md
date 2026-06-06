@@ -11,9 +11,9 @@ Requirement - [JRE 1.8 (64-bit)](https://www.java.com/en/download/manual.jsp)
 
 ## Usage:
 ```
-java -jar renamer.jar [-a] <path/to/app.apk> [-o] <path/to/renamed.apk> [-n] <new_name> [-p] <new.package.name> [-i] <new_icon.png>
+java -jar renamer.jar [-a] <path/to/app.apk> [-o] <path/to/renamed.apk> [-n] <new_name> [-p] <new.package.name> [-i] <new_icon.png> [-b] <new_banner.png>
 ```
-You can place app.apk to \"in\" folder, new_icon.png to \"icon\" folder
+You can place app.apk to \"in\" folder, new_icon.png to \"icon\" folder, new_banner.png to \"banner\" folder
 and run `java -jar renamer.jar` without arguments. Your renamed_app.apk will be placed in \"out\" folder
 
 Optionally you can add the `[-d]` flag to perform a "deep renaming".
@@ -41,6 +41,12 @@ Optionally, you can pass arguments to Apktool.
 &nbsp;&nbsp;&nbsp;&nbsp; To implement arguments when Apktool builds the apk, add the following flag: `-ba "-option1 -option2"`. For example, `-ba "--use-aapt2"`. The string with arguments for Apktool should be enclosed in quotation marks.
 
 &nbsp;&nbsp;&nbsp;&nbsp; You can find a list of Apktool's arguments on its [official site](https://ibotpeaches.github.io/Apktool/documentation/).
+
+Optionally add the `[-b] <new_banner.png>` flag to change the app banner for Android TV (Tv OS).
+
+&nbsp;&nbsp;&nbsp;&nbsp;You can also place new_banner.png in the "banner" folder and it will be picked up automatically.
+
+&nbsp;&nbsp;&nbsp;&nbsp;The banner image is resized to the appropriate resolution for each density bucket (320x180 xhdpi standard).
 
 Optionally add the `[-r] <path/to/dictionary.txt>` flag and the program will replace text in APK files using a dictionary.
 
