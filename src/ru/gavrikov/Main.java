@@ -687,7 +687,7 @@ class Renamer {
     }
 
     private String getNameLabel(Node manifest) {
-        Node att = getAttribute(manifest, new String[]{"application"}, "android:label");
+        Node att = getAttribute(manifest, new String[]{"application"}, "n1:label");
         String result = att.getNodeValue();
         if (!result.contains("@string/")) return null;
         result = result.replace("@string/", "");
@@ -732,7 +732,7 @@ class Renamer {
 
     private void changeIconName(Node n) {
         String name = getMipmapFolderName(n);
-        replaceAttribute(n, new String[]{"application"}, "android:icon", "@" + name + "/" + getNewIconName());
+        replaceAttribute(n, new String[]{"application"}, "n1:icon", "@" + name + "/" + getNewIconName());
     }
 
     private String getNewIconName() {
@@ -784,7 +784,7 @@ class Renamer {
 
 
     private String getMipmapFolderName(Node manifest) {
-        Node att = getAttribute(manifest, new String[]{"application"}, "android:icon");
+        Node att = getAttribute(manifest, new String[]{"application"}, "n1:icon");
         String result = att.getNodeValue();
         int end = result.indexOf("/");
         result = result.substring(1, end);
@@ -807,7 +807,7 @@ class Renamer {
             if (name_label != null) {
                 forReplace.put(name_label, this.appName);
             }else {
-                replaceAttribute(manifest, new String[]{"application"}, "android:label" , this.appName);
+                replaceAttribute(manifest, new String[]{"application"}, "n1:label" , this.appName);
             }
         }
 
@@ -834,10 +834,10 @@ class Renamer {
                         NamedNodeMap attr = provider.getAttributes();
                         for (int n = 0; n < attr.getLength(); n++) {
                             l(attr.item(n).getNodeName());
-                            if (attr.item(n).getNodeName() == "android:name") isNameAbsent = false;
+                            if (attr.item(n).getNodeName() == "n1:name") isNameAbsent = false;
                         }
                         if (isNameAbsent) {
-                            Attr nameAttribute = provider.getOwnerDocument().createAttribute("android:name");
+                            Attr nameAttribute = provider.getOwnerDocument().createAttribute("n1:name");
                             nameAttribute.setValue("myname");
                             Element providerElement = (Element) provider;
                             providerElement.setAttributeNode(nameAttribute);
