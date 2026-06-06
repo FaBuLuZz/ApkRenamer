@@ -1,19 +1,30 @@
 package ru.gavrikov;
 
-import java.io.*;
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileFilter;
+import java.io.FileReader;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.io.StringWriter;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Paths;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Random;
+import java.util.Scanner;
+import java.util.Set;
 
-
-import net.coobird.thumbnailator.Thumbnails;
-import org.apache.commons.io.FileUtils;
-import org.w3c.dom.*;
-import org.xml.sax.SAXException;
-
-import javax.xml.parsers.*;
+import javax.xml.parsers.DocumentBuilder;
+import javax.xml.parsers.DocumentBuilderFactory;
+import javax.xml.parsers.ParserConfigurationException;
 import javax.xml.transform.OutputKeys;
 import javax.xml.transform.Transformer;
 import javax.xml.transform.TransformerException;
@@ -21,11 +32,22 @@ import javax.xml.transform.TransformerFactory;
 import javax.xml.transform.dom.DOMSource;
 import javax.xml.transform.stream.StreamResult;
 
+import org.apache.commons.io.FileUtils;
+import org.w3c.dom.Attr;
+import org.w3c.dom.Document;
+import org.w3c.dom.Element;
+import org.w3c.dom.NamedNodeMap;
+import org.w3c.dom.Node;
+import org.w3c.dom.NodeList;
+import org.xml.sax.SAXException;
+
+import net.coobird.thumbnailator.Thumbnails;
+
 public class Main {
 
     public static void main(String[] args) throws IOException {
 
-        ArrayList<String> arguments = new ArrayList(Arrays.asList(args));
+        ArrayList<String> arguments = new ArrayList<String>(Arrays.asList(args));
         if (arguments.indexOf("-h") != -1) {
             showHelp();
             return;
@@ -40,7 +62,6 @@ public class Main {
         String dictionary = parser.extractArgument("-r");
         String decodeArguments = parser.extractArgument("-da");
         String buildArguments = parser.extractArgument("-ba");
-
 
         Boolean isDeepRename = parser.extractBooleanArgument("-d");
         Boolean isPauseActive = parser.extractBooleanArgument("-t");
@@ -82,7 +103,6 @@ public class Main {
                 + "\n\nAdd the [-r] <path/to/dictionary.txt> flag and the program will replace text in APK files using a dictionary.";
         System.out.println(helpText);
     }
-
 }
 
 class ArgumentsParser {
@@ -118,7 +138,6 @@ class Renamer {
     private File inApk = null;
     private File outApk = null;
     private File iconFile = null;
-
 
     private String appName = "";
     private String pacName = "out";
@@ -185,7 +204,6 @@ class Renamer {
         this.isSkipModify = isSkipModify;
 
         this.dictionaryPath = dictionaryPath;
-
     }
 
     void run() {
@@ -224,8 +242,8 @@ class Renamer {
         System.out.println(message);
         Scanner in = new Scanner(System.in);
         in.nextLine();
+        in.close();
     }
-
 
     private static void deleteFolder(File folder) {
         File[] files = folder.listFiles();
@@ -283,7 +301,6 @@ class Renamer {
             l("Error due execution " + file);
             e.printStackTrace();
         }
-
     }
 
     public class JarExecutionException extends RuntimeException {
@@ -348,6 +365,7 @@ class Renamer {
         System.out.println(description);
         Scanner in = new Scanner(System.in);
         result = in.nextLine();
+        in.close();
         if (result.equals("")) {
             input(description);
         }
@@ -377,7 +395,6 @@ class Renamer {
     private File getCacheDir() {
         return new File(getCurrentDir() + File.separator + "cache");
     }
-
 
     private File getKeyDir() {
         return new File(getCurrentDir() + File.separator + "keys");
@@ -433,12 +450,11 @@ class Renamer {
     }
 
     private HashMap<String, String> getMapsApiKey() {
-        HashMap<String, String> result = new HashMap();
+        HashMap<String, String> result = new HashMap<String, String>();
         File mapKeyFile = getFile(getKeyDir(), ".txt");
         if (mapKeyFile != null) {
-            try {
+            try (BufferedReader br = new BufferedReader(new FileReader(mapKeyFile))) {
                 String name = mapKeyFile.getName().replace(".txt", "");
-                BufferedReader br = new BufferedReader(new FileReader(mapKeyFile));
                 String value = br.readLine();
                 result.put(name, value);
             } catch (IOException e) {
@@ -471,7 +487,6 @@ class Renamer {
         return new File(getBinDir() + File.separator + "SJIT.jar");
     }
 
-
     private File getZipalignExe() {
         String osName = System.getProperty("os.name");
         File zipalignFile;
@@ -499,9 +514,9 @@ class Renamer {
         return new File(getTempDir() + File.separator + "AndroidManifest.xml");
     }
 
-    private Map getDictionary(String pathToDictionary) {
+    private Map<String, String> getDictionary(String pathToDictionary) {
         List<String> allLines = new ArrayList<String>();
-        Map result = new HashMap<String, String>();
+        Map<String, String> result = new HashMap<String, String>();
         try {
             allLines = Files.readAllLines(Paths.get(pathToDictionary));
         } catch (IOException e) {
@@ -538,7 +553,6 @@ class Renamer {
         return new String[]{name, value};
     }
 
-
     private void extractApk() {
         String[] firstArgs = new String[]{"d", getSubjectApk().toString(), "-f", "-o", getTempDir().toString()};
         String[] additionalArgs = stringToArguments(decodeArguments);
@@ -573,7 +587,7 @@ class Renamer {
     }
 
     private String[] stringToArguments(String s) {
-        ArrayList<String> result = new ArrayList();
+        ArrayList<String> result = new ArrayList<String>();
         String[] listArgs = s.split(" ");
         for (int i = 0; i < listArgs.length; i++) {
             String value = listArgs[i];
@@ -595,7 +609,6 @@ class Renamer {
         runExec(zipalignFile, new String[]{"-p", "-f", "-v", "4", getUnsignedApk().toString(), getZipalignedApk().toString()});
         getUnsignedApk().delete();
     }
-
 
     private void signApk() {
         String[] command = {"sign", "--key", getPk8Key().toString(), "--cert", getPemKey().toString(), "--out", getSignedApk().toString(), getZipalignedApk().toString()};
@@ -630,7 +643,6 @@ class Renamer {
         return root;
     }
 
-
     private void replaceAttribute(Node node, String[] node_path, String attribute, String newValue) {
         Node att = getAttribute(node, node_path, attribute);
         att.setNodeValue(newValue);
@@ -661,7 +673,6 @@ class Renamer {
         return null;
     }
 
-
     private void saveXmlFile(File file, Node node) {
         // write the content into xml file
         try {
@@ -673,7 +684,6 @@ class Renamer {
         } catch (TransformerException e) {
 
         }
-
     }
 
     private String getNameLabel(Node manifest) {
@@ -695,7 +705,6 @@ class Renamer {
             changePackageName(manifest, this.pacName);
         }
 
-
         changeStrings(manifest);
         fixProviderNoName(manifest);
 
@@ -709,7 +718,6 @@ class Renamer {
             l("Perform deep renaming...");
             renamePackageFolders(packageName, this.pacName);
         }
-
     }
 
     private void changeImages(Node manifest, File newIcon) {
@@ -841,7 +849,6 @@ class Renamer {
         }
     }
 
-
     //Fix problem with error: Error: No resource type specified (at 'value' with value '@1996685312')
     //Make updates in the manifest
     private void fixNoResourceError() {
@@ -872,7 +879,7 @@ class Renamer {
 
     private void replaceStrings(Node node, HashMap<String, String> forReplace) {
         NodeList nl = node.getChildNodes();
-        Set keysForReplace = forReplace.keySet();
+        Set<String> keysForReplace = forReplace.keySet();
         for (int i = 0; i < nl.getLength(); i++) {
             Node item = nl.item(i);
             if (item.hasAttributes()) {
@@ -883,7 +890,6 @@ class Renamer {
             }
         }
     }
-
 
     private File[] getValuesFolders() {
         File res = getResDir();
@@ -979,7 +985,6 @@ class Renamer {
         return result;
     }
 
-
     //Recursive list of files in a folder
     private ArrayList<File> getFilesList(File folder) {
         ArrayList<File> result = (ArrayList<File>) FileUtils.listFiles(folder, null, true);
@@ -990,7 +995,6 @@ class Renamer {
     private String getPackageName(Node manifest) {
         return manifest.getAttributes().getNamedItem("package").getNodeValue();
     }
-
 
     //Rename folders with smali for new package
     private void renamePackageFolders(String oldPackageName, String newPackageName) {
@@ -1019,8 +1023,6 @@ class Renamer {
                 throw new RuntimeException(e);
             }
         }
-
-
     }
 
     private File movePackageToCache(File smaliFolder, String packageName) {
